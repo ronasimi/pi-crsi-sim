@@ -1,0 +1,3 @@
+sim.ndjson
+.tmp-*
+node_modules
