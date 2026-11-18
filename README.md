@@ -20,9 +20,10 @@ Global Pi extension implementing Continual Recursive Self-Improvement (CRSI) wit
 
 2. Start the local runtime model (required for CRSI operations):
    ```bash
-   ~/.bin/lfm littlemoe
+   ~/.bin/corvid start
    ```
-   Serves LFM2.5-8B-A1B-Q5_K_M at `http://127.0.0.1:8080/v1` (model ID: `lfm-moe`).
+   Serves Corvid-Magpie-8B at `http://127.0.0.1:8080/v1` (model ID: `corvid-magpie`).
+   If the model is unavailable, `/crsi` defers gracefully without crashing.
 
 3. Create a benchmark manifest (JSON array):
    ```json
@@ -47,7 +48,7 @@ Global Pi extension implementing Continual Recursive Self-Improvement (CRSI) wit
 |---------|---------|---------|
 | `CRSI_SIM_FILE` | `~/.pi/extensions/crsi-sim/sim.ndjson` | NDJSON persistence path |
 | `CRSI_RUNTIME_URL` | `http://127.0.0.1:8080/v1` | Local model endpoint |
-| `CRSI_RUNTIME_MODEL` | `lfm-moe` | Model ID |
+| `CRSI_RUNTIME_MODEL` | `corvid-magpie` | Model ID |
 
 No API keys required. The runtime model is local.
 
@@ -80,7 +81,8 @@ No API keys required. The runtime model is local.
 ## Limitations
 
 - Single-machine, single-user. No concurrent writer protection (one Pi session at a time).
-- The local 8B model is the runtime for all CRSI inference (policy, proposer, selector). Quality is bounded by model capability.
+- The local Corvid-Magpie-8B model is the runtime for all CRSI inference (policy, proposer, selector). Quality is bounded by model capability.
+- Background CRSI work is serialized behind foreground Pi operations sharing the same model endpoint.
 - Held-out split is the user's responsibility in the manifest design (exclude held-out tasks from the evolve manifest).
 - Background learning is observational only; it does not constitute the paper's SIM mechanism.
 - Copy isolation is NOT a security sandbox.

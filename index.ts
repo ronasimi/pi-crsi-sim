@@ -12,8 +12,9 @@
  *   - Predictions recorded before evaluation; measured outcomes after.
  *   - Rejected eval checkpoints are NOT SIM and not supplied as memory.
  *
- * Runtime model: Local LFM2.5-8B (lfm-moe) at :8080. No remote fallback.
- *   Start with: ~/.bin/lfm littlemoe
+ * Runtime model: Local Corvid-Magpie-8B (corvid-magpie) at :8080. No remote fallback.
+ *   Start with: ~/.bin/corvid start
+ *   If unavailable, CRSI operations defer gracefully (no crash).
  *
  * Active by default: persisted H is injected into before_agent_start.
  *   Escape: /crsi off (disables injection for this session).
@@ -36,7 +37,7 @@ import { execSync } from "node:child_process";
 // --- Configuration ---
 const SIM_FILE = process.env.CRSI_SIM_FILE ?? join(homedir(), ".pi", "extensions", "crsi-sim", "sim.ndjson");
 const RT_URL = process.env.CRSI_RUNTIME_URL ?? "http://127.0.0.1:8080/v1";
-const RT_MODEL = process.env.CRSI_RUNTIME_MODEL ?? "lfm-moe";
+const RT_MODEL = process.env.CRSI_RUNTIME_MODEL ?? "corvid-magpie";
 
 // --- Types ---
 type H = { systemPrompt: string; toolRules: string; maxTurns: number; parserRetries: number };
@@ -87,7 +88,7 @@ async function rt(prompt: string, system: string, signal?: AbortSignal): Promise
     body: JSON.stringify({ model: RT_MODEL, messages: [{ role: "system", content: system }, { role: "user", content: prompt }] }),
     signal,
   });
-  if (!res.ok) throw new Error(`Runtime model HTTP ${res.status} (start with: ~/.bin/lfm littlemoe)`);
+  if (!res.ok) throw new Error(`Runtime model unavailable (HTTP ${res.status}). Start with: ~/.bin/corvid start`);
   const j = await res.json() as any;
   return j.choices?.[0]?.message?.content ?? "";
 }
@@ -179,6 +180,10 @@ function registerCrsi(pi: ExtensionAPI) {
         return;
       }
       if (sub !== "source" && sub !== "target") { ctx.ui.notify("Usage: /crsi source|target <manifest.json> | inspect | off", "error"); return; }
+      // Graceful deferral if runtime model unavailable
+      try { await rt("ping", "Reply ok.", new AbortController().signal); } catch (e: any) {
+        ctx.ui.notify(`CRSI deferred: ${e.message}`, "error"); return;
+      }
       const manifestPath = parts[1];
       if (!manifestPath) { ctx.ui.notify("Missing manifest path", "error"); return; }
 
